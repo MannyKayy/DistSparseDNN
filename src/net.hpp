@@ -70,10 +70,10 @@ Net<Weight>::Net(const uint32_t NinputInstanses_, const uint32_t Nneurons_, cons
     nrows = ((NinputInstanses + 1) > nrows) ? (NinputInstanses + 1) : nrows; 
     ncols = ((Nneurons + 1) > ncols) ? (Nneurons+1) : ncols;
     ncols += (ncols % Env::nthreads) ? (Env::nthreads - (ncols % Env::nthreads)) : 0;    
-    ncols += Env::nthreads; // Refine 
+    //ncols += Env::nthreads; // Refine 
     
     inputFeatures = std::move(std::make_unique<Tiling<Weight>>(Env::nranks, Env::nranks, 1, Env::nranks, nnz, nrows, ncols, 
-                                                               feature_file, input_type, TILING_TYPE::_1D_ROW_, compression_type, REFINE_TYPE::_REFINE_COLS_));
+                                                               feature_file, input_type, TILING_TYPE::_1D_ROW_, compression_type, REFINE_TYPE::_REFINE_NONE_));
      
     Logging::print(Logging::LOG_LEVEL::INFO, "Neural network: Processing the category files for %d neurons and %d layers.\n", Nneurons, maxLayers); 
     std::vector<uint32_t> maxLayersVector = {120, 480, 1920};
@@ -108,7 +108,7 @@ Net<Weight>::Net(const uint32_t NinputInstanses_, const uint32_t Nneurons_, cons
         ncols = (inputFeatures->ncols > ncols) ? inputFeatures->ncols : ncols; 
         
         layers[i] = std::move(std::make_unique<Tiling<Weight>>(1, 1, 1, 1, nnz, nrows, ncols, 
-                                                layerFile, input_type, TILING_TYPE::_1D_COL_, compression_type, REFINE_TYPE::_REFINE_BOTH_));                              
+                                                layerFile, input_type, TILING_TYPE::_1D_COL_, compression_type, REFINE_TYPE::_REFINE_NONE_));
                   
         biasDenseVecs[i] = std::vector<Weight>(inputFeatures->ncols, biasValue);
         Logging::enabled = false; 
