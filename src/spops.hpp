@@ -57,7 +57,8 @@ inline std::tuple<uint64_t, uint32_t, uint32_t> spmm_sym(std::shared_ptr<struct 
         for(uint32_t j = start_col; j < end_col; j++) {
             for(uint32_t k = B_JA[j]; k < B_JA[j+1]; k++) {
                 uint32_t l = B_IA[k];
-                for(uint32_t n = A_JA[l]; n < A_JA[l+1]; n++) {
+                uint32_t m = (l == start_col) ? displacement_nnz : 0;
+                for(uint32_t n = A_JA[l] + m; n < A_JA[l+1]; n++) {
                     s[A_IA[n]] = 1;
                 }
             }
@@ -131,12 +132,13 @@ inline void spmm(std::shared_ptr<struct Compressed_Format<Weight>> A,
         uint32_t end_col = Env::end_col[tid];
         uint32_t displacement_nnz = Env::displacement_nnz[tid];
         
-        C_JA[start_col] = Env::offset_nnz[tid];
+        //C_JA[start_col] = Env::offset_nnz[tid];
         
         for(uint32_t j = start_col; j < end_col; j++) {
             for(uint32_t k = B_JA[j]; k < B_JA[j+1]; k++) {
                 uint32_t l = B_IA[k];
-                for(uint32_t n = A_JA[l]; n < A_JA[l+1]; n++) {
+                uint32_t m = (l == start_col) ? displacement_nnz : 0;
+                for(uint32_t n = A_JA[l] + m; n < A_JA[l+1]; n++) {
                     s[A_IA[n]] += (B_A[k] * A_A[n]);
                 }
             }
@@ -145,6 +147,7 @@ inline void spmm(std::shared_ptr<struct Compressed_Format<Weight>> A,
         
         #pragma omp barrier
         C_CSC->adjust(tid);
+        //if(!tid)C_CSC->walk();
         //C_CSC->walk(tid);
         
     }
@@ -174,8 +177,10 @@ inline char validate_prediction(std::shared_ptr<struct Compressed_Format<Weight>
     for(int32_t t = 0; t < Env::nthreads; t++) {
         uint32_t start_col = Env::start_col[t];
         uint32_t end_col   = Env::end_col[t];
+        uint32_t displacement_nnz = Env::displacement_nnz[t];
         for(uint32_t j = start_col; j < end_col; j++) {
-            for(uint32_t i = A_JA[j]; i < A_JA[j+1]; i++) {
+            uint32_t m = (j == start_col) ? displacement_nnz : 0;
+            for(uint32_t i = A_JA[j] + m; i < A_JA[j+1]; i++) {
                 allCategories[A_IA[i]] = 1;
             }
         }
