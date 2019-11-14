@@ -68,7 +68,7 @@ Net<Weight>::Net(const uint32_t NinputInstanses_, const uint32_t Nneurons_, cons
                                                                      : IO::binary_file_stat<Weight>(feature_file);
 
     nrows = ((NinputInstanses + 2) > nrows) ? (NinputInstanses + 2) : nrows; 
-    ncols = ((Nneurons + 2 > ncols) ? (Nneurons + 2) : ncols;
+    ncols = ((Nneurons + 2) > ncols) ? (Nneurons + 2) : ncols;
     ncols += (ncols % Env::nthreads) ? (Env::nthreads - (ncols % Env::nthreads)) : 0;    
     //ncols += Env::nthreads; // Refine 
     
