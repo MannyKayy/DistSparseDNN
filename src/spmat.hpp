@@ -184,13 +184,15 @@ void CSC<Weight>::walk(const int32_t tid) {
     
     uint32_t start_col = Env::start_col[tid];// + tid + 1;
     uint32_t end_col = Env::end_col[tid];
+    uint32_t displacement_nnz = Env::displacement_nnz[tid];
 
     Env::checksum[tid] = 0;
     Env::checkcount[tid] = 0;    
     #pragma omp barrier
     for(uint32_t j = start_col; j < end_col; j++) {  
+        uint32_t m = (j == start_col) ? displacement_nnz : 0;
         // std::cout << "j=" << j << "," << j-(tid+1) << ": " << JA[j] << "--" << JA[j + 1] << ": " <<  JA[j + 1] - JA[j] << std::endl;
-        for(uint32_t i = JA[j]; i < JA[j + 1]; i++) {
+        for(uint32_t i = JA[j] + m; i < JA[j + 1]; i++) {
             (void) IA[i];
             (void) A[i];
             Env::checksum[tid] += A[i];
@@ -236,7 +238,7 @@ void CSC<Weight>::walk() {
     int t = 0;
     for(uint32_t j = 0; j < CSC::ncols; j++) { 
     
-        if(j == Env::start_col[t]-1) {
+        if(j == Env::start_col[t]) {
             displacement = Env::displacement_nnz[t]; 
             t++;
         }
