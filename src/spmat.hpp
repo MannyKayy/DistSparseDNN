@@ -248,8 +248,8 @@ void CSC<Weight>::walk() {
             displacement = 0;        
         }
         */
-        //if(!Env::rank)
-        //    std::cout << "j=" << j << ": " << JA[j] << "--" << JA[j + 1] << ": " <<  JA[j + 1] - JA[j] << std::endl;
+       //if(!Env::rank)
+         //   std::cout << "j=" << j << ": " << JA[j] << "--" << JA[j + 1] << ": " <<  JA[j + 1] - JA[j] << std::endl;
 
         for(uint32_t i = JA[j]; i < JA[j + 1]; i++) {
             (void) IA[i];
@@ -261,7 +261,7 @@ void CSC<Weight>::walk() {
 
     Env::barrier();
     if(CSC::one_rank) {
-        Logging::print(Logging::LOG_LEVEL::INFO, "Iteration=%d, Total checksum=%f, Total count=%d\n", Env::iteration, checksum, checkcount);
+        Logging::print(Logging::LOG_LEVEL::INFO, "Layer=%d, Total checksum=%f, Total count=%d\n", Env::iteration, checksum, checkcount);
     }
     else {
         uint64_t nnz_ = CSC::nnz_i;
@@ -276,7 +276,7 @@ void CSC<Weight>::walk() {
             Logging::print(Logging::LOG_LEVEL::WARN, "Compression checksum warning!!\n");
         }
         
-        Logging::print(Logging::LOG_LEVEL::INFO, "Iteration=%d, Total checksum=%f, Total count=%d\n", Env::iteration, sum_ranks, count_ranks);
+        Logging::print(Logging::LOG_LEVEL::INFO, "Layer=%d, Total checksum=%f, Total count=%d\n", Env::iteration, sum_ranks, count_ranks);
     }    
 }
 
@@ -334,7 +334,7 @@ void CSC<Weight>::repopulate(const std::shared_ptr<struct CSC<Weight>> other, co
     uint32_t* o_IA    = other->IA_blk->ptr;
     Weight*   o_A     = other->A_blk->ptr;
 
-    if((CSC::ncols != o_ncols) or(CSC::nrows != o_nrows)) {
+    if((CSC::ncols != o_ncols) or (CSC::nrows != o_nrows)) {
         fprintf(stderr, "Error: Cannot repopulate CSC\n");
         exit(1);
     }
@@ -361,15 +361,18 @@ void CSC<Weight>::repopulate(const std::shared_ptr<struct CSC<Weight>> other, co
     //JA[start_col] = Env::offset_nnz[tid] - Env::displacement_nnz[tid];
     
     for(int32_t i = 0; i < tid; i++) {
-        JA[start_col] += (Env::index_nnz[i] - Env::offset_nnz[i]);
+        JA[start_col+1] += (Env::index_nnz[i] - Env::offset_nnz[i]);
     }
     //printf("%d %d %lu %lu %d\n", tid, JA[start_col], Env::index_nnz[0], Env::offset_nnz[0], (Env::index_nnz[i-1] - Env::offset_nnz[i-1]));
-    //#pragma omp barrier
+//#pragma omp barrier
     //std::exit(0);
 
     
+  //  end_col -= (tid == (Env::nthreads - 1)) ? 0 : 1;
+    //printf("%d %d %d\n", tid, start_col, end_col);
+    
     for(uint32_t j = start_col; j < end_col; j++) {
-        JA[j+1] = JA[j];
+        JA[j+1] = (j == start_col) ? JA[j+1] : JA[j];
         uint32_t k = JA[j+1];
         uint32_t m = (j == start_col) ? Env::displacement_nnz[tid] : 0;
         for(uint32_t i = o_JA[j] + m; i < o_JA[j + 1]; i++) {
@@ -379,8 +382,10 @@ void CSC<Weight>::repopulate(const std::shared_ptr<struct CSC<Weight>> other, co
             k++;
         }
     }
-    
-    
+//    end_col += (tid == (Env::nthreads - 1)) ? 0 : 1;
+//    printf("%d %d %d - %d %d %d %d\n", tid, start_col, end_col, JA[start_col], JA[start_col+1], JA[end_col-1], JA[end_col]);
+  //  printf("%lu %lu\n", CSC::nnz, CSC::nnz_i);
+    //#pragma omp barrier
 /*    
     uint32_t start_col = Env::start_col[tid];
     uint32_t end_col = Env::end_col[tid];
