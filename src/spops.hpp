@@ -145,7 +145,7 @@ inline void spmm(std::shared_ptr<struct Compressed_Format<Weight>> A,
         A_CSC->repopulate(C_CSC, tid);
         //if(!tid) A_CSC->walk();
         //A_CSC->walk(tid);
-        #pragma omp barrier
+        //#pragma omp barrier
     }
     else {
         Logging::print(Logging::LOG_LEVEL::ERROR, "SpMM not implemented.\n");
