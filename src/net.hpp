@@ -69,8 +69,7 @@ Net<Weight>::Net(const uint32_t NinputInstanses_, const uint32_t Nneurons_, cons
 
     nrows = ((NinputInstanses + 2) > nrows) ? (NinputInstanses + 2) : nrows; 
     ncols = ((Nneurons + 2) > ncols) ? (Nneurons + 2) : ncols;
-    ncols += (ncols % Env::nthreads) ? (Env::nthreads - (ncols % Env::nthreads)) : 0;    
-    //ncols += Env::nthreads; // Refine 
+    ncols += (ncols % Env::nthreads) ? (Env::nthreads - (ncols % Env::nthreads)) : 0;     
     
     inputFeatures = std::move(std::make_unique<Tiling<Weight>>(Env::nranks, Env::nranks, 1, Env::nranks, nnz, nrows, ncols, 
                                                                feature_file, input_type, TILING_TYPE::_1D_ROW_, compression_type, REFINE_TYPE::_REFINE_NONE_));
@@ -95,7 +94,7 @@ Net<Weight>::Net(const uint32_t NinputInstanses_, const uint32_t Nneurons_, cons
 
     Logging::print(Logging::LOG_LEVEL::INFO, "Neural network: Processing %d layer files (silent).\n", maxLayers); 
 
-    //maxLayers = 3;
+    //maxLayers = 2;
     layers.resize(maxLayers);
     biasDenseVecs.resize(maxLayers);
     for(uint32_t i = 0; i < maxLayers; i++) {
@@ -227,7 +226,7 @@ void Net<Weight>::inferenceReLU(COMPRESSED_FORMAT compression_type) {
         spmm(A0_spmat, B0_spmat, C0_spmat, s_spa, b_bias, tid);
         
         if(!tid) {
-            Env::time_ranks.push_back(Env::toc(start_time));
+            Env::time_ranks.push_back(Env::toc(start_time));            
         }
         
         // Layer 1 to the last layer
@@ -239,14 +238,14 @@ void Net<Weight>::inferenceReLU(COMPRESSED_FORMAT compression_type) {
                 start_time = Env::tic();                                                                    
             }
         
-            if(not(l%2)) {
+            //if(not(l%2)) {
                 A_tile = inputFeatures->tiles[Env::rank][0];
                 C_tile = output->tiles[Env::rank][0];
-            }
-            else {
-                A_tile = output->tiles[Env::rank][0];
-                C_tile = inputFeatures->tiles[Env::rank][0];
-            }
+            //}
+            //else {
+              //  A_tile = output->tiles[Env::rank][0];
+                //C_tile = inputFeatures->tiles[Env::rank][0];
+            //}
 
             auto& A_spmat = A_tile.spmat;
             auto& C_spmat = C_tile.spmat;
