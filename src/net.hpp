@@ -113,12 +113,14 @@ Net<Weight>::Net(const uint32_t NinputInstanses_, const uint32_t Nneurons_, cons
         biasDenseVecs[i] = std::vector<Weight>(inputFeatures->ncols, biasValue);
         Logging::enabled = false; 
     }
+    Logging::enabled = true;
+    Logging::print(Logging::LOG_LEVEL::INFO, "Neural network: Done reading %d layer files.\n", maxLayers); 
+    
     
     spaDenseVec.resize(Env::nthreads);
     for(int32_t i = 0; i < Env::nthreads; i++)
         spaDenseVec[i].resize(inputFeatures->tile_height);    
     
-    Logging::enabled = true;
     Logging::print(Logging::LOG_LEVEL::INFO, "Neural network: Running the inferenceReLU method.\n"); 
     Env::barrier();
     auto start1 = std::chrono::high_resolution_clock::now();
@@ -209,7 +211,6 @@ void Net<Weight>::inferenceReLU(COMPRESSED_FORMAT compression_type) {
         auto& B0_tile = layers[0]->tiles[0][0];
         auto& B0_spmat = B0_tile.spmat;
         auto& s_spa = spaDenseVec[tid];
-        uint32_t n1 = 0, n2 = 0;
         std::tie(Env::offset_nnz[tid], std::ignore, std::ignore) = spmm_sym(A0_spmat, B0_spmat, s_spa, tid);                                              
         
         #pragma omp barrier
@@ -217,7 +218,6 @@ void Net<Weight>::inferenceReLU(COMPRESSED_FORMAT compression_type) {
             nnz = Env::assign_nnz();
             output = std::move(std::make_unique<Tiling<Weight>>(Env::nranks, Env::nranks, 1, Env::nranks, nnz, nrows, ncols, 
                                                                 TILING_TYPE::_1D_ROW_, compression_type)); 
-            Env::iteration++;
         }
         
         #pragma omp barrier
@@ -227,6 +227,7 @@ void Net<Weight>::inferenceReLU(COMPRESSED_FORMAT compression_type) {
         spmm(A0_spmat, B0_spmat, C0_spmat, s_spa, b_bias, tid);
         
         if(!tid) {
+            Env::iteration++;
             Env::time_ranks.push_back(Env::toc(start_time));
         }
         
@@ -260,12 +261,12 @@ void Net<Weight>::inferenceReLU(COMPRESSED_FORMAT compression_type) {
             if(!tid) {
                 nnz = Env::assign_nnz();
                 C_spmat->reallocate(nnz, nrows, ncols);
-                Env::iteration++;
             }
             #pragma omp barrier
             spmm(A_spmat, B_spmat, C_spmat, s_spa, b_bias, tid);
             
             if(!tid) {
+                Env::iteration++;
                 Env::time_ranks.push_back(Env::toc(start_time));
             }
         }
