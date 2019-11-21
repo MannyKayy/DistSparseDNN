@@ -218,7 +218,6 @@ void Net<Weight>::inferenceReLU(COMPRESSED_FORMAT compression_type) {
             nnz = Env::assign_nnz();
             output = std::move(std::make_unique<Tiling<Weight>>(Env::nranks, Env::nranks, 1, Env::nranks, nnz, nrows, ncols, 
                                                                 TILING_TYPE::_1D_ROW_, compression_type)); 
-            Env::iteration++;
         }
         
         #pragma omp barrier
@@ -228,6 +227,7 @@ void Net<Weight>::inferenceReLU(COMPRESSED_FORMAT compression_type) {
         spmm(A0_spmat, B0_spmat, C0_spmat, s_spa, b_bias, tid);
         
         if(!tid) {
+            Env::iteration++;
             Env::time_ranks.push_back(Env::toc(start_time));            
         }
         
@@ -261,12 +261,12 @@ void Net<Weight>::inferenceReLU(COMPRESSED_FORMAT compression_type) {
             if(!tid) {
                 nnz = Env::assign_nnz();
                 C_spmat->reallocate(nnz, nrows, ncols);
-                Env::iteration++;
             }
             #pragma omp barrier
             spmm(A_spmat, B_spmat, C_spmat, s_spa, b_bias, tid);
             
             if(!tid) {
+                Env::iteration++;
                 Env::time_ranks.push_back(Env::toc(start_time));
             }
         }
