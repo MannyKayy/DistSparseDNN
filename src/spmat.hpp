@@ -382,6 +382,7 @@ void CSC<Weight>::repopulate(const std::shared_ptr<struct CSC<Weight>> other, co
             k++;
         }
     }
+    #pragma omp barrier
 //    end_col += (tid == (Env::nthreads - 1)) ? 0 : 1;
 //    printf("%d %d %d - %d %d %d %d\n", tid, start_col, end_col, JA[start_col], JA[start_col+1], JA[end_col-1], JA[end_col]);
   //  printf("%lu %lu\n", CSC::nnz, CSC::nnz_i);
